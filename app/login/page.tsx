@@ -1,4 +1,5 @@
 'use client';
+import type { FormEvent } from 'react';
 import { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -6,7 +7,7 @@ import Link from 'next/link';
 
 export default function LoginPage(){
   const [email,setEmail]=useState(''); const [password,setPassword]=useState(''); const [error,setError]=useState('');
-  async function login(e:React.FormEvent){
+  async function login(e:FormEvent){
     e.preventDefault(); setError('');
     try{ await signInWithEmailAndPassword(auth,email,password); location.href='/input'; }
     catch{ setError('로그인 정보를 확인해주세요.'); }

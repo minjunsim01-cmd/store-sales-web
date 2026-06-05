@@ -1,4 +1,5 @@
 'use client';
+import type { FormEvent } from 'react';
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { addDoc, collection, doc, getDoc, serverTimestamp } from 'firebase/firestore';
@@ -12,7 +13,7 @@ export default function InputPage(){
   const today=new Date().toISOString().slice(0,10);
   const [form,setForm]=useState({date:today,creditCard:'',starCard:'',dollar:'',won:'',memo:''});
   useEffect(()=>onAuthStateChanged(auth,async user=>{ if(!user){location.href='/login';return} const snap=await getDoc(doc(db,'users',user.uid)); const data=snap.data() as Omit<UserProfile,'uid'>|undefined; setProfile({uid:user.uid,name:data?.name||user.email||'직원',role:data?.role||'staff',storeName:data?.storeName||'본점'}); }),[]);
-  async function save(e:React.FormEvent){
+  async function save(e:FormEvent){
     e.preventDefault(); if(!profile)return;
     const d=new Date(form.date); const sale={date:form.date,year:d.getFullYear(),month:d.getMonth()+1,day:d.getDate(),creditCard:num(form.creditCard),starCard:num(form.starCard),dollar:num(form.dollar),won:num(form.won),memo:form.memo,managerName:profile.name,userId:profile.uid,storeName:profile.storeName,createdAt:serverTimestamp(),updatedAt:serverTimestamp()};
     await addDoc(collection(db,'sales'),sale); setMsg('저장되었습니다.'); setForm({...form,creditCard:'',starCard:'',dollar:'',won:'',memo:''});
