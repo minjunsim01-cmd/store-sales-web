@@ -5,6 +5,11 @@ service cloud.firestore {
     function myProfile() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
     function isAdmin() { return signedIn() && myProfile().role in ['admin', 'manager']; }
 
+    match /loginNames/{loginId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /users/{userId} {
       allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
       allow write: if isAdmin();

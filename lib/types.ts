@@ -5,6 +5,7 @@ export type UserProfile = {
   name: string;
   role: UserRole;
   storeName: string;
+  email?: string;
 };
 
 export type Sale = {
@@ -17,7 +18,7 @@ export type Sale = {
   starCard: number;
   dollar: number;
   won: number;
-  memo: string;
+  wonAmount: number;
   managerName: string;
   userId: string;
   storeName: string;
