@@ -1,10 +1,10 @@
 'use client';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
-import { normalizeLoginName, makeLocalEmail } from '@/lib/date';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import type { UserProfile } from '@/lib/types';
+import { DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_PASSWORD, saveSession, userDocId } from '@/lib/localAuth';
 
 export default function LoginPage(){
   const [name,setName]=useState('');
@@ -17,18 +17,25 @@ export default function LoginPage(){
     setError('');
     setLoading(true);
     try{
-      const loginId = normalizeLoginName(name);
-      let email = makeLocalEmail(name);
-      const loginDoc = await getDoc(doc(db,'loginNames',loginId));
-      if(loginDoc.exists()){
-        const data = loginDoc.data() as {email?: string};
-        if(data.email) email = data.email;
+      const cleanName = name.trim();
+      const id = userDocId(cleanName);
+      const ref = doc(db, 'users', id);
+      let snap = await getDoc(ref);
+
+      if(!snap.exists() && cleanName === DEFAULT_ADMIN_NAME && password === DEFAULT_ADMIN_PASSWORD){
+        const admin: UserProfile = { uid:id, name:DEFAULT_ADMIN_NAME, role:'admin', storeName:'본점', password:DEFAULT_ADMIN_PASSWORD };
+        await setDoc(ref, admin);
+        snap = await getDoc(ref);
       }
-      await signInWithEmailAndPassword(auth,email,password);
+
+      if(!snap.exists()) throw new Error('no user');
+      const user = snap.data() as UserProfile;
+      if(user.password !== password) throw new Error('bad password');
+      saveSession({ uid:id, name:user.name, role:user.role, storeName:user.storeName || '본점' });
       location.href='/input';
     }
     catch{
-      setError('이름 또는 비밀번호를 확인해주세요.');
+      setError('이름 또는 비밀번호를 확인해주세요. 최초 관리자는 심민준 / 12345678 입니다.');
     }
     finally{setLoading(false);}
   }

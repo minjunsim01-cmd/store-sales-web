@@ -1,11 +1,11 @@
-export type UserRole = 'staff' | 'manager' | 'admin';
+export type UserRole = 'admin' | 'manager' | 'staff';
 
 export type UserProfile = {
   uid: string;
   name: string;
   role: UserRole;
   storeName: string;
-  email?: string;
+  password?: string;
 };
 
 export type Sale = {
@@ -22,6 +22,4 @@ export type Sale = {
   managerName: string;
   userId: string;
   storeName: string;
-  createdAt?: unknown;
-  updatedAt?: unknown;
 };
