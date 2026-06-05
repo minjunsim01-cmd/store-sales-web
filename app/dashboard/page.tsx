@@ -75,13 +75,13 @@ export default function Dashboard(){
   }
 
   return <main className="container">
+    <section className="brand-shell no-print"><div className="brand-row"><div><img src="/logo.png" alt="BBQ Outpost" className="brand-logo"/><h1 className="brand-title">{isAdmin ? '관리자 대시보드' : '내 기록'}</h1><p className="brand-sub">{me?.name}님 · 매장세일즈</p></div><button className="logout-link" onClick={logout}>로그아웃</button></div></section>
     <div className="nav no-print"><Link href="/input">매출 입력</Link><Link href="/report">월별 매출표</Link>{me?.role !== 'staff' && <Link href="/admin/users">직원 관리</Link>}<button className="nav-button" onClick={logout}>로그아웃</button></div>
-    <h1>{isAdmin ? '관리자 대시보드' : '대시보드'}</h1>
     <div className="card no-print">
       <div className="month-picker"><label>연도 <input type="number" value={viewYear} onChange={e=>setViewYear(Number(e.target.value))}/></label><label>월 <input type="number" min="1" max="12" value={viewMonth} onChange={e=>setViewMonth(Number(e.target.value))}/></label></div>
       <p className="muted">선택한 월과 바로 전월을 비교합니다.</p>
     </div>
-    <div className="kpi"><div>{viewMonth}월 일별매출 합계<br/><b>{currentTotal.toLocaleString()}</b></div><div>전월 합계<br/><b>{prevTotal.toLocaleString()}</b></div><div>전월 대비<br/><b>{diff.toLocaleString()}</b></div><div>크레딧카드<br/><b>{total(currentSales,'creditCard').toLocaleString()}</b></div><div>스타카드<br/><b>{total(currentSales,'starCard').toLocaleString()}</b></div><div>달러<br/><b>{total(currentSales,'dollar').toLocaleString()}</b></div><div>원화<br/><b>{total(currentSales,'won').toLocaleString()}</b></div><div>원화금액<br/><b>{total(currentSales,'wonAmount').toLocaleString()}</b></div></div>
+    <div className="kpi hero-card"><div>{viewMonth}월 일별매출 합계<br/><b>{currentTotal.toLocaleString()}</b></div><div>전월 합계<br/><b>{prevTotal.toLocaleString()}</b></div><div>전월 대비<br/><b className={diff>=0?'brand-accent':''}>{diff.toLocaleString()}</b></div><div>누적 달러<br/><b>${total(currentSales,'dollar').toLocaleString()}</b></div><div>누적 원화금액<br/><b>₩{total(currentSales,'wonAmount').toLocaleString()}</b></div><div>크레딧카드<br/><b>{total(currentSales,'creditCard').toLocaleString()}</b></div><div>스타카드<br/><b>{total(currentSales,'starCard').toLocaleString()}</b></div><div>원화<br/><b>{total(currentSales,'won').toLocaleString()}</b></div></div>
     {msg&&<p className="success">{msg}</p>}
 
     <div className="card"><h2>일별 전월 비교</h2><div className="table-scroll"><table className="sales-table compact-table"><thead><tr><th>일자</th><th>{viewMonth}월</th><th>{prevDate.month}월</th><th>차이</th></tr></thead><tbody>{dailyCompare.map(r=><tr key={r.day}><td>{r.day}일</td><td>{r.cur?r.cur.toLocaleString():''}</td><td>{r.prev?r.prev.toLocaleString():''}</td><td>{r.diff?r.diff.toLocaleString():''}</td></tr>)}</tbody></table></div></div>
@@ -101,5 +101,6 @@ export default function Dashboard(){
     </div>}
 
     <div className="card"><h2>최근 입력 내역</h2><div className="table-scroll"><table className="sales-table compact-table"><thead><tr><th>날짜</th><th>담당자</th><th>크레딧카드</th><th>스타카드</th><th>달러</th><th>원화</th><th>원화금액</th><th>일별매출</th>{isAdmin&&<th className="no-print">관리</th>}</tr></thead><tbody>{sales.slice(0,80).map(s=><tr key={s.id}><td>{s.date}</td><td>{s.managerName}</td><td>{s.creditCard?.toLocaleString()}</td><td>{s.starCard?.toLocaleString()}</td><td>{s.dollar?.toLocaleString()}</td><td>{s.won?.toLocaleString()}</td><td>{s.wonAmount?.toLocaleString()}</td><td>{saleTotal(s).toLocaleString()}</td>{isAdmin&&<td className="no-print"><div className="table-actions"><button type="button" className="small-button" onClick={()=>startEdit(s)}>수정</button><button type="button" className="small-button danger" onClick={()=>removeSale(s)}>삭제</button></div></td>}</tr>)}</tbody></table></div></div>
+  <nav className="bottom-nav no-print"><Link href="/input">🏠<span>입력</span></Link><Link href="/dashboard" className="active">📊<span>대시보드</span></Link>{isAdmin && <Link href="/admin/users">👥<span>직원</span></Link>}<Link href="/report">🧾<span>매출표</span></Link></nav>
   </main>
 }

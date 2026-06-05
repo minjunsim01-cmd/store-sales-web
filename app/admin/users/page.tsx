@@ -66,8 +66,8 @@ export default function UsersAdmin(){
   function logout(){ clearSession(); location.href='/login'; }
 
   return <main className="container">
+    <section className="brand-shell no-print"><div className="brand-row"><div><img src="/logo.png" alt="BBQ Outpost" className="brand-logo"/><h1 className="brand-title">직원 관리</h1><p className="brand-sub">계정 생성 · 비밀번호 재설정 · 삭제</p></div><button className="logout-link" onClick={logout}>로그아웃</button></div></section>
     <div className="nav no-print"><Link href="/input">매출 입력</Link><Link href="/dashboard">대시보드</Link><Link href="/report">월별 매출표</Link><button className="nav-button" onClick={logout}>로그아웃</button></div>
-    <h1>직원 관리</h1>
     <div className="card">
       <h2>직원 추가</h2>
       <form className="grid" onSubmit={createStaff}>
@@ -79,6 +79,7 @@ export default function UsersAdmin(){
       {msg&&<p className="success">{msg}</p>}{error&&<p className="error">{error}</p>}
       <p className="muted">직원은 이름과 비밀번호만 입력해서 로그인합니다. 직원 본인도 입력 화면에서 비밀번호를 변경할 수 있습니다.</p>
     </div>
-    <div className="card"><h2>직원 목록</h2><div className="table-scroll"><table className="sales-table compact-table"><thead><tr><th>이름</th><th>권한</th><th>비밀번호 재설정</th><th>삭제</th></tr></thead><tbody>{users.map(u=><tr key={u.uid}><td>{u.name}</td><td>{u.role}</td><td><div className="inline-control"><input type="password" placeholder="새 비밀번호" value={resetPw[u.uid]||''} onChange={e=>setResetPw({...resetPw,[u.uid]:e.target.value})}/><button type="button" className="small-button" onClick={()=>resetPassword(u)}>재설정</button></div></td><td><button type="button" className="small-button danger" onClick={()=>removeUser(u)} disabled={u.uid===me?.uid}>삭제</button></td></tr>)}</tbody></table></div></div>
+    <div className="card"><h2>직원 목록</h2><div className="admin-card-grid">{users.map(u=><article className="staff-card" key={u.uid}><div className="staff-card-head"><b>{u.name}</b><span className="role-pill">{u.role}</span></div><div className="inline-control"><input type="password" placeholder="새 비밀번호" value={resetPw[u.uid]||''} onChange={e=>setResetPw({...resetPw,[u.uid]:e.target.value})}/><button type="button" className="small-button" onClick={()=>resetPassword(u)}>재설정</button></div><button type="button" className="small-button danger" style={{marginTop:8,width:'100%'}} onClick={()=>removeUser(u)} disabled={u.uid===me?.uid}>삭제</button></article>)}</div></div>
+  <nav className="bottom-nav no-print"><Link href="/input">🏠<span>입력</span></Link><Link href="/dashboard">📊<span>대시보드</span></Link><Link href="/admin/users" className="active">👥<span>직원</span></Link><Link href="/report">🧾<span>매출표</span></Link></nav>
   </main>
 }

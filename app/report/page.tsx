@@ -33,9 +33,11 @@ export default function Report(){
   }),[sales,year,month]);
 
   const money=(n:number)=>n?Math.round(n).toLocaleString():'';
+  const totals=rows.reduce((a,r)=>({creditCard:a.creditCard+r.creditCard,starCard:a.starCard+r.starCard,dollar:a.dollar+r.dollar,won:a.won+r.won,wonAmount:a.wonAmount+r.wonAmount,dailySales:a.dailySales+r.dailySales}),{creditCard:0,starCard:0,dollar:0,won:0,wonAmount:0,dailySales:0});
   function logout(){ clearSession(); location.href='/login'; }
 
   return <main className="container report-container">
+    <section className="brand-shell no-print"><div className="brand-row"><div><img src="/logo.png" alt="BBQ Outpost" className="brand-logo"/><h1 className="brand-title">월별 매출표</h1><p className="brand-sub">모바일은 요약, 인쇄는 회사 양식</p></div><button className="logout-link" onClick={logout}>로그아웃</button></div></section>
     <div className="nav no-print">
       <Link href="/input">매출 입력</Link>
       <Link href="/dashboard">대시보드</Link>
@@ -49,7 +51,7 @@ export default function Report(){
         <button onClick={()=>window.print()}>인쇄 / PDF 저장</button>
         <p className="muted">월을 바꾸면 지난달 매출표도 다시 볼 수 있습니다.</p>
       </div>
-      <div className="table-scroll report-scroll"><table className="sales-table report-table">
+      <div className="mobile-only no-print card hero-card"><h2 className="section-title">{year}년 {month}월 요약</h2><div className="summary-grid"><div className="summary-card"><strong>일별매출 합계</strong><b>{money(totals.dailySales)}</b></div><div className="summary-card"><strong>누적 달러</strong><b>${money(totals.dollar)}</b></div><div className="summary-card"><strong>누적 원화금액</strong><b>₩{money(totals.wonAmount)}</b></div><div className="summary-card"><strong>크레딧카드</strong><b>{money(totals.creditCard)}</b></div></div><p className="muted">아래 인쇄/PDF 버튼을 누르면 회사 양식 그대로 출력됩니다.</p></div><div className="table-scroll report-scroll desktop-only"><table className="sales-table report-table">
         <thead>
           <tr><th className="report-title" colSpan={9}>매 장 매 출</th></tr>
           <tr><th>연도</th><th>월</th><th colSpan={2}>카 드</th><th colSpan={3}>현 금</th><th>일별매출</th><th>담당자</th></tr>
@@ -69,5 +71,6 @@ export default function Report(){
         </tbody>
       </table></div>
     </div>
+  <nav className="bottom-nav no-print"><Link href="/input">🏠<span>입력</span></Link><Link href="/dashboard">📊<span>대시보드</span></Link><Link href="/admin/users">👥<span>직원</span></Link><Link href="/report" className="active">🧾<span>매출표</span></Link></nav>
   </main>;
 }
