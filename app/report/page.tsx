@@ -35,7 +35,7 @@ export default function Report(){
   const money=(n:number)=>n?Math.round(n).toLocaleString():'';
   function logout(){ clearSession(); location.href='/login'; }
 
-  return <main className="container">
+  return <main className="container report-container">
     <div className="nav no-print">
       <Link href="/input">매출 입력</Link>
       <Link href="/dashboard">대시보드</Link>
@@ -47,12 +47,13 @@ export default function Report(){
         <label>연도 <input type="number" value={year} onChange={e=>setYear(Number(e.target.value))}/></label>{' '}
         <label>월 <input type="number" min="1" max="12" value={month} onChange={e=>setMonth(Number(e.target.value))}/></label>{' '}
         <button onClick={()=>window.print()}>인쇄 / PDF 저장</button>
+        <p className="muted">월을 바꾸면 지난달 매출표도 다시 볼 수 있습니다.</p>
       </div>
-      <table className="sales-table report-table">
+      <div className="table-scroll report-scroll"><table className="sales-table report-table">
         <thead>
           <tr><th className="report-title" colSpan={9}>매 장 매 출</th></tr>
-          <tr><th>연도</th><th>월</th><th colSpan={2}>카 드</th><th colSpan={3}>현 금</th><th colSpan={2}></th></tr>
-          <tr><th>{year}</th><th>{month}</th><th>크레딧카드</th><th>스타카드</th><th>달러</th><th>원화</th><th>원화금액</th><th>일별매출</th><th>담당자</th></tr>
+          <tr><th>연도</th><th>월</th><th colSpan={2}>카 드</th><th colSpan={3}>현 금</th><th>일별매출</th><th>담당자</th></tr>
+          <tr><th>{year}</th><th>{month}</th><th>크레딧카드</th><th>스타카드</th><th>달러</th><th>원화</th><th>원화금액</th><th></th><th></th></tr>
         </thead>
         <tbody>
           {rows.map(r=><tr key={r.day}>
@@ -62,11 +63,11 @@ export default function Report(){
             <td>{money(r.dollar)}</td>
             <td>{money(r.won)}</td>
             <td>{money(r.wonAmount)}</td>
-            <td>{money(r.dailySales)}</td>
-            <td>{r.managerName}</td>
+            <td className="daily-cell">{money(r.dailySales)}</td>
+            <td className="manager-cell">{r.managerName}</td>
           </tr>)}
         </tbody>
-      </table>
+      </table></div>
     </div>
   </main>;
 }

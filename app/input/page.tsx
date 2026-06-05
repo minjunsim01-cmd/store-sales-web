@@ -1,7 +1,7 @@
 'use client';
 import type { FormEvent } from 'react';
 import { useEffect, useState } from 'react';
-import { addDoc, collection, doc, onSnapshot, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, onSnapshot, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Sale, UserProfile } from '@/lib/types';
 import { getKoreaDateParts } from '@/lib/date';
@@ -10,6 +10,7 @@ import Link from 'next/link';
 
 function num(v:string){return Number(String(v).replaceAll(',',''))||0}
 function saleTotal(s:Pick<Sale,'creditCard'|'starCard'|'dollar'|'won'>){return (s.creditCard||0)+(s.starCard||0)+(s.dollar||0)+(s.won||0)}
+function partsFromDate(date:string){ const d=new Date(`${date}T00:00:00`); return {date,year:d.getFullYear(),month:d.getMonth()+1,day:d.getDate()}; }
 
 type FormState={creditCard:string;starCard:string;dollar:string;won:string;wonAmount:string};
 const emptyForm:FormState={creditCard:'',starCard:'',dollar:'',won:'',wonAmount:''};
@@ -18,9 +19,12 @@ export default function InputPage(){
   const [profile,setProfile]=useState<UserProfile|null>(null);
   const [msg,setMsg]=useState('');
   const [now,setNow]=useState(getKoreaDateParts());
+  const [adminDate,setAdminDate]=useState(getKoreaDateParts().date);
   const [form,setForm]=useState<FormState>(emptyForm);
   const [mySales,setMySales]=useState<Sale[]>([]);
   const [editingId,setEditingId]=useState<string|null>(null);
+  const [pw,setPw]=useState({current:'',next:'',confirm:''});
+  const [pwMsg,setPwMsg]=useState('');
 
   useEffect(()=>{
     const user = getSession();
@@ -32,7 +36,10 @@ export default function InputPage(){
 
   useEffect(()=>{
     if(!profile) return;
-    return onSnapshot(query(collection(db,'sales'),where('userId','==',profile.uid)),snap=>{
+    const q = profile.role === 'staff'
+      ? query(collection(db,'sales'),where('userId','==',profile.uid))
+      : query(collection(db,'sales'));
+    return onSnapshot(q,snap=>{
       const rows = snap.docs.map(d=>({id:d.id,...d.data()} as Sale)).sort((a,b)=>(b.date || '').localeCompare(a.date || ''));
       setMySales(rows);
     });
@@ -41,12 +48,13 @@ export default function InputPage(){
   async function save(e:FormEvent){
     e.preventDefault();
     if(!profile)return;
-    const kDate = getKoreaDateParts();
+    const isAdmin = profile.role !== 'staff';
+    const dateParts = isAdmin ? partsFromDate(adminDate) : getKoreaDateParts();
     const payload={
-      date:kDate.date,
-      year:kDate.year,
-      month:kDate.month,
-      day:kDate.day,
+      date:dateParts.date,
+      year:dateParts.year,
+      month:dateParts.month,
+      day:dateParts.day,
       creditCard:num(form.creditCard),
       starCard:num(form.starCard),
       dollar:num(form.dollar),
@@ -70,6 +78,7 @@ export default function InputPage(){
 
   function startEdit(s:Sale){
     setEditingId(s.id || null);
+    setAdminDate(s.date);
     setForm({
       creditCard:String(s.creditCard||''),
       starCard:String(s.starCard||''),
@@ -81,22 +90,38 @@ export default function InputPage(){
     window.scrollTo({top:0,behavior:'smooth'});
   }
 
-  function cancelEdit(){ setEditingId(null); setForm(emptyForm); setMsg(''); }
+  async function changePassword(e:FormEvent){
+    e.preventDefault();
+    if(!profile) return;
+    setPwMsg('');
+    if(pw.next.length < 4){ setPwMsg('새 비밀번호는 4자리 이상으로 입력해주세요.'); return; }
+    if(pw.next !== pw.confirm){ setPwMsg('새 비밀번호 확인이 일치하지 않습니다.'); return; }
+    const ref=doc(db,'users',profile.uid);
+    const snap=await getDoc(ref);
+    const current=snap.data()?.password;
+    if(current !== pw.current){ setPwMsg('현재 비밀번호가 맞지 않습니다.'); return; }
+    await updateDoc(ref,{password:pw.next,updatedAt:serverTimestamp()});
+    setPw({current:'',next:'',confirm:''});
+    setPwMsg('비밀번호가 변경되었습니다.');
+  }
+
+  function cancelEdit(){ setEditingId(null); setForm(emptyForm); setMsg(''); setAdminDate(getKoreaDateParts().date); }
   function logout(){ clearSession(); location.href='/login'; }
+  const isAdmin = profile?.role !== 'staff';
 
   return <main className="container">
     <div className="nav no-print">
       <Link href="/dashboard">대시보드</Link>
       <Link href="/report">월별 매출표</Link>
-      {profile?.role !== 'staff' && <Link href="/admin/users">직원 관리</Link>}
+      {isAdmin && <Link href="/admin/users">직원 관리</Link>}
       <button type="button" className="nav-button" onClick={logout}>로그아웃</button>
     </div>
     <div className="card mobile-card">
       <img src="/logo.png" alt="BBQ Outpost" className="small-logo" />
       <h1>{editingId ? '매출 수정' : '매출 입력'}</h1>
-      <p>날짜: <b>{now.date}</b> <span className="muted">한국 시간 자동 적용</span></p>
+      {isAdmin ? <label className="field admin-date">날짜 선택 <span className="muted">관리자는 지난달/누락일 입력 가능</span><input type="date" value={adminDate} onChange={e=>setAdminDate(e.target.value)} /></label> : <p>날짜: <b>{now.date}</b> <span className="muted">한국 시간 자동 적용</span></p>}
       <p>담당자: <b>{profile?.name}</b></p>
-      <form onSubmit={save} className="grid one">
+      <form onSubmit={save} className="grid one quick-form">
         <label className="field">크레딧카드<input inputMode="numeric" value={form.creditCard} onChange={e=>setForm({...form,creditCard:e.target.value})}/></label>
         <label className="field">스타카드<input inputMode="numeric" value={form.starCard} onChange={e=>setForm({...form,starCard:e.target.value})}/></label>
         <label className="field">달러<input inputMode="decimal" value={form.dollar} onChange={e=>setForm({...form,dollar:e.target.value})}/></label>
@@ -108,15 +133,26 @@ export default function InputPage(){
       {msg&&<p className="success">{msg}</p>}
     </div>
 
+    <details className="card account-card">
+      <summary>내 비밀번호 변경</summary>
+      <form className="grid" onSubmit={changePassword}>
+        <label className="field">현재 비밀번호<input type="password" value={pw.current} onChange={e=>setPw({...pw,current:e.target.value})}/></label>
+        <label className="field">새 비밀번호<input type="password" value={pw.next} onChange={e=>setPw({...pw,next:e.target.value})}/></label>
+        <label className="field">새 비밀번호 확인<input type="password" value={pw.confirm} onChange={e=>setPw({...pw,confirm:e.target.value})}/></label>
+        <button>비밀번호 변경</button>
+      </form>
+      {pwMsg&&<p className={pwMsg.includes('변경')?'success':'error'}>{pwMsg}</p>}
+    </details>
+
     <div className="card">
-      <h2>내 입력 내역</h2>
-      <p className="muted">직원은 본인이 입력한 매출만 수정할 수 있습니다.</p>
-      <table className="sales-table compact-table">
-        <thead><tr><th>날짜</th><th>크레딧카드</th><th>스타카드</th><th>달러</th><th>원화</th><th>원화금액</th><th>일별매출</th><th>수정</th></tr></thead>
-        <tbody>{mySales.slice(0,20).map(s=><tr key={s.id}>
-          <td>{s.date}</td><td>{s.creditCard?.toLocaleString()}</td><td>{s.starCard?.toLocaleString()}</td><td>{s.dollar?.toLocaleString()}</td><td>{s.won?.toLocaleString()}</td><td>{s.wonAmount?.toLocaleString()}</td><td>{saleTotal(s).toLocaleString()}</td><td><button type="button" className="small-button" onClick={()=>startEdit(s)}>수정</button></td>
+      <h2>{isAdmin ? '전체 입력 내역' : '내 입력 내역'}</h2>
+      <p className="muted">직원은 본인이 입력한 매출만 수정할 수 있고, 관리자는 과거 날짜 입력/수정은 가능합니다. 삭제는 관리자 대시보드에서 가능합니다.</p>
+      <div className="table-scroll"><table className="sales-table compact-table">
+        <thead><tr><th>날짜</th><th>담당자</th><th>크레딧카드</th><th>스타카드</th><th>달러</th><th>원화</th><th>원화금액</th><th>일별매출</th><th>수정</th></tr></thead>
+        <tbody>{mySales.slice(0,40).map(s=><tr key={s.id}>
+          <td>{s.date}</td><td>{s.managerName}</td><td>{s.creditCard?.toLocaleString()}</td><td>{s.starCard?.toLocaleString()}</td><td>{s.dollar?.toLocaleString()}</td><td>{s.won?.toLocaleString()}</td><td>{s.wonAmount?.toLocaleString()}</td><td>{saleTotal(s).toLocaleString()}</td><td><button type="button" className="small-button" onClick={()=>startEdit(s)}>수정</button></td>
         </tr>)}</tbody>
-      </table>
+      </table></div>
     </div>
   </main>
 }
